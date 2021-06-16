@@ -434,12 +434,12 @@ class Stem(tf.keras.layers.Layer):
 class Head(tf.keras.layers.Layer):
   """Head layer for network outputs."""
 
-  def __init__(self, mconfig, name=None):
+  def __init__(self, mconfig,gap, name=None):
     super().__init__(name=name)
 
     self.endpoints = {}
     self._mconfig = mconfig
-
+    self.gap=gap
     self._conv_head = tf.keras.layers.Conv2D(
         filters=round_filters(mconfig.feature_size or 1280, mconfig),
         kernel_size=1,
@@ -487,7 +487,10 @@ class Head(tf.keras.layers.Layer):
         outputs = self._fc(outputs)
       self.endpoints['head'] = outputs
     else:
-      outputs = self._avg_pooling(outputs)
+      if self.gap:
+        outputs = self._avg_pooling(outputs)
+      else:
+        pass
       self.endpoints['pooled_features'] = outputs
       if self._dropout:
         outputs = self._dropout(outputs, training=training)
@@ -505,7 +508,8 @@ class EffNetV2Model(tf.keras.Model):
                model_name='efficientnetv2-s',
                model_config=None,
                include_top=True,
-               name=None):
+               name=None,
+               gap=True):
     """Initializes an `Model` instance.
 
     Args:
@@ -565,7 +569,7 @@ class EffNetV2Model(tf.keras.Model):
             conv_block(block_args, self._mconfig, name=block_name()))
 
     # Head part.
-    self._head = Head(self._mconfig)
+    self._head = Head(self._mconfig,self.gap)
 
     # top part for classification
     if self.include_top and self._mconfig.num_classes:
@@ -658,6 +662,7 @@ def get_model(model_name,
               pretrained=True,
               training=True,
               with_endpoints=False,
+              gap=True,
               **kwargs):
   """Get a EfficientNet V1 or V2 model instance.
 
@@ -675,7 +680,7 @@ def get_model(model_name,
   Returns:
     A single tensor if with_endpoints if False; otherwise, a list of tensor.
   """
-  net = EffNetV2Model(model_name, model_config, include_top, **kwargs)
+  net = EffNetV2Model(model_name, model_config, include_top,gap, **kwargs)
   net(tf.keras.Input(shape=(None, None, 3)),
       training=training,
       with_endpoints=with_endpoints)
