@@ -474,7 +474,7 @@ class Head(tf.keras.layers.Layer):
         outputs = self._fc(outputs)
       self.endpoints['head'] = outputs
     else:
-      outputs = self._avg_pooling(outputs)
+      #outputs = self._avg_pooling(outputs)
       self.endpoints['pooled_features'] = outputs
       if self._dropout:
         outputs = self._dropout(outputs, training=training)
